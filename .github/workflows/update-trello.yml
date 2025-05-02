@@ -1,0 +1,33 @@
+name: Update Trello Card Title with Time Passed
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # каждые 30 минут
+  workflow_dispatch:         # запуск вручную
+
+jobs:
+  update-trello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Trello card with time passed
+        env:
+          CARD_ID: oJ0W2BuE   # ← твой ID карточки
+          START_DATE: '2025-04-18T11:00:00Z'  # ← твоя стартовая дата
+          TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+          TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+        run: |
+          now=$(date -u +%s)
+          start=$(date -d "$START_DATE" +%s)
+          diff=$((now - start))
+
+          days=$((diff / 86400))
+          hours=$(((diff % 86400) / 3600))
+          minutes=$(((diff % 3600) / 60))
+
+          new_title="Прошло: ${days} дней ${hours} часов ${minutes} минут"
+
+          curl --request PUT "https://api.trello.com/1/cards/$CARD_ID" \
+            --header "Accept: application/json" \
+            --data-urlencode "name=$new_title" \
+            --data-urlencode "key=$TRELLO_API_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN"
