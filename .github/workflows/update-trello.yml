@@ -2,17 +2,27 @@ name: Update Trello Card Title with Time Passed
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # каждые 30 минут
+    - cron: '*/30 * * * *'  # каждые 30 минут
   workflow_dispatch:         # запуск вручную
 
 jobs:
   update-trello:
     runs-on: ubuntu-latest
     steps:
-      - name: Print secrets
+      - name: Check if secrets are available
         run: |
-          echo "TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}"
-          echo "TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}"
+          if [ -z "${{ secrets.TRELLO_API_KEY }}" ]; then
+            echo "TRELLO_API_KEY is not set!"
+          else
+            echo "TRELLO_API_KEY is set."
+          fi
+
+          if [ -z "${{ secrets.TRELLO_TOKEN }}" ]; then
+            echo "TRELLO_TOKEN is not set!"
+          else
+            echo "TRELLO_TOKEN is set."
+          fi
+
       - name: Update Trello card with time passed
         env:
           CARD_ID: oJ0W2BuE   # ← твой ID карточки
@@ -20,18 +30,23 @@ jobs:
           TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
           TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
         run: |
+          # Получение текущего времени в формате UTC
           now=$(date -u +%s)
-          start=$(date -d "$START_DATE" +%s)
+          # Преобразование стартовой даты в формат секунд с момента эпохи
+          start=$(date -u -d "$START_DATE" +%s)
+          
+          # Вычисление разницы
           diff=$((now - start))
 
+          # Перевод в дни, часы, минуты
           days=$((diff / 86400))
           hours=$(((diff % 86400) / 3600))
           minutes=$(((diff % 3600) / 60))
 
+          # Формирование нового заголовка для карточки
           new_title="Прошло: ${days} дней ${hours} часов ${minutes} минут"
 
-          curl --request PUT "https://api.trello.com/1/cards/$CARD_ID" \
+          # Отправка запроса на обновление заголовка карточки
+          curl --request PUT "https://api.trello.com/1/cards/$CARD_ID?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN" \
             --header "Accept: application/json" \
-            --data-urlencode "name=$new_title" \
-            --data-urlencode "key=$TRELLO_API_KEY" \
-            --data-urlencode "token=$TRELLO_TOKEN"
+            --data-urlencode "name=$new_title"
