@@ -2,7 +2,7 @@ name: Update Trello Card Title with Time Passed
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # каждые 30 минут
+    - cron: '*/1 * * * *'  # каждые 30 минут
   workflow_dispatch:         # запуск вручную
 
 jobs:
