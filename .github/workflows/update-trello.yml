@@ -9,6 +9,10 @@ jobs:
   update-trello:
     runs-on: ubuntu-latest
     steps:
+      - name: Print secrets
+        run: |
+          echo "TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}"
+          echo "TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}"
       - name: Update Trello card with time passed
         env:
           CARD_ID: oJ0W2BuE   # ← твой ID карточки
