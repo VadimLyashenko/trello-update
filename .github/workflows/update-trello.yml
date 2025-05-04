@@ -41,6 +41,7 @@ jobs:
           
           # Очищаем строку от лишних символов и заменяем "→" на пробел
           cleaned_period=$(echo "$period_line" | sed -E 's/Период:\s*//;s/\*//g')
+          cleaned_period=$(echo "$cleaned_period" | sed 's/→/ /')
           
           # Разделяем строку на дату и время начала и окончания
           start_date=$(echo "$cleaned_period" | awk '{print $1" "$2}')
