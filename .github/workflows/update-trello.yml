@@ -1,52 +1,59 @@
-name: Update Trello Card Title with Time Passed
+name: Update Trello Card Progress
 
 on:
   schedule:
     - cron: '*/30 * * * *'  # каждые 30 минут
-  workflow_dispatch:         # запуск вручную
+  workflow_dispatch:        # запуск вручную
 
 jobs:
-  update-trello:
+  update-progress:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if secrets are available
-        run: |
-          if [ -z "${{ secrets.TRELLO_API_KEY }}" ]; then
-            echo "TRELLO_API_KEY is not set!"
-          else
-            echo "TRELLO_API_KEY is set."
-          fi
-
-          if [ -z "${{ secrets.TRELLO_TOKEN }}" ]; then
-            echo "TRELLO_TOKEN is not set!"
-          else
-            echo "TRELLO_TOKEN is set."
-          fi
-
-      - name: Update Trello card with time passed
+      - name: Update Trello card with progress
         env:
-          CARD_ID: oJ0W2BuE   # ← твой ID карточки
-          START_DATE: '2025-04-18T11:00:00Z'  # ← твоя стартовая дата
+          BOARD_ID: 662jNYs5
           TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
           TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
         run: |
-          # Получение текущего времени в формате UTC
-          now=$(date -u +%s)
-          # Преобразование стартовой даты в формат секунд с момента эпохи
-          start=$(date -u -d "$START_DATE" +%s)
-          
-          # Вычисление разницы
-          diff=$((now - start))
+          set -e
 
-          # Перевод в дни, часы, минуты
-          days=$((diff / 86400))
-          hours=$(((diff % 86400) / 3600))
-          minutes=$(((diff % 3600) / 60))
+          # Получаем список списков на доске
+          lists=$(curl -s "https://api.trello.com/1/boards/$BOARD_ID/lists?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
+          first_list_id=$(echo "$lists" | jq -r '.[0].id')
 
-          # Формирование нового заголовка для карточки
-          new_title="Прошло: ${days} дней ${hours} часов ${minutes} минут"
+          # Получаем карточки из первого списка
+          cards=$(curl -s "https://api.trello.com/1/lists/$first_list_id/cards?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
+          card=$(echo "$cards" | jq '.[0]')
+          card_id=$(echo "$card" | jq -r '.id')
+          card_desc=$(echo "$card" | jq -r '.desc')
+          card_name=$(echo "$card" | jq -r '.name')
 
-          # Отправка запроса на обновление заголовка карточки
-          curl --request PUT "https://api.trello.com/1/cards/$CARD_ID?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN" \
-            --header "Accept: application/json" \
-            --data-urlencode "name=$new_title"
+          # Извлекаем строку с Периодом
+          period_line=$(echo "$card_desc" | grep -i "Период: ")
+          period_range=$(echo "$period_line" | sed -E 's/Период: (.+)/\1/')
+          start_date=$(echo "$period_range" | awk -F " — " '{print $1}')
+          end_date=$(echo "$period_range" | awk -F " — " '{print $2}')
+
+          # Переводим в секунды
+          start_ts=$(date -d "$start_date" +%s)
+          end_ts=$(date -d "$end_date" +%s)
+          now_ts=$(date -u +%s)
+
+          # Считаем прогресс
+          total=$((end_ts - start_ts))
+          passed=$((now_ts - start_ts))
+          if [ $passed -lt 0 ]; then passed=0; fi
+          if [ $passed -gt $total ]; then passed=$total; fi
+          progress=$((100 * passed / total))
+
+          # Удаляем старую часть с прогрессом, если она была
+          clean_title=$(echo "$card_name" | sed -E 's/ *\| Прогресс: [0-9]+%$//')
+
+          # Формируем новый заголовок
+          new_title="$clean_title | Прогресс: ${progress}%"
+
+          # Обновляем карточку
+          curl -s --request PUT "https://api.trello.com/1/cards/$card_id" \
+            --data-urlencode "name=$new_title" \
+            --data-urlencode "key=$TRELLO_API_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN"
