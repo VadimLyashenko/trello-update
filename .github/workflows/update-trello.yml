@@ -41,7 +41,8 @@ jobs:
           
           # Очищаем строку от лишних символов (убираем "Период:", а также "→" заменяем на пробел)
           cleaned_period=$(echo "$period_line" | sed -E 's/Период:\s*//;s/→/ /g')
-          
+          echo "✅ cleaned_period: $cleaned_period"
+
           # Разделяем строку на дату начала и окончания
           start_date=$(echo "$cleaned_period" | awk '{print $1" "$2}')
           end_date=$(echo "$cleaned_period" | awk '{print $3" "$4}')
