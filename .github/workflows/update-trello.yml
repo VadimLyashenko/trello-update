@@ -39,8 +39,8 @@ jobs:
           # Извлекаем строку с Периодом
           period_line=$(echo "$card_desc" | grep -i "Период:" | head -n 1)
           
-          # Убираем все лишние символы, включая "Период:" и звезды
-          cleaned_period=$(echo "$period_line" | sed -E 's/Период:*\s*//;s/\*//g')
+          # Убираем все лишние символы, включая "Период:" и символ "→"
+          cleaned_period=$(echo "$period_line" | sed -E 's/Период:*\s*//;s/→/ /g')
           
           # Извлекаем начало и конец периода
           start_date=$(echo "$cleaned_period" | awk '{print $1" "$2}')
