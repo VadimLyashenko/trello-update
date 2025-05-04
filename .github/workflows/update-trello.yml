@@ -16,10 +16,14 @@ jobs:
           TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
         run: |
           set -e
+          echo "🏁 Start"
+          which jq || echo "❌ jq not found"
 
           # Получаем список списков на доске
           lists=$(curl -s "https://api.trello.com/1/boards/$BOARD_ID/lists?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
           first_list_id=$(echo "$lists" | jq -r '.[0].id')
+          echo "📦 Получаем списки..."
+          echo "$lists"
 
           # Получаем карточки из первого списка
           cards=$(curl -s "https://api.trello.com/1/lists/$first_list_id/cards?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
@@ -27,12 +31,18 @@ jobs:
           card_id=$(echo "$card" | jq -r '.id')
           card_desc=$(echo "$card" | jq -r '.desc')
           card_name=$(echo "$card" | jq -r '.name')
+          echo "🧱 Получаем карточки..."
+          echo "$cards"
+          echo "📋 Описание карточки:"
+          echo "$card_desc"
 
           # Извлекаем строку с Периодом
           period_line=$(echo "$card_desc" | grep -i "Период: ")
           period_range=$(echo "$period_line" | sed -E 's/Период: (.+)/\1/')
           start_date=$(echo "$period_range" | awk -F " — " '{print $1}')
           end_date=$(echo "$period_range" | awk -F " — " '{print $2}')
+          echo "⏳ Период:"
+          echo "$period_line"
 
           # Переводим в секунды
           start_ts=$(date -d "$start_date" +%s)
