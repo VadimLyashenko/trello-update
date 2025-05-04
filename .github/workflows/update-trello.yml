@@ -40,23 +40,30 @@ jobs:
           period_line=$(echo "$card_desc" | grep -i "Период:" | head -n 1)
           
           # Извлекаем дату начала и окончания, используя стрелку как разделитель
-          period_range=$(echo "$period_line" | sed -E 's/Период: (.+) → (.+)/\1 → \2/')
-          start_date=$(echo "$period_range" | awk -F " → " '{print $1}')
-          end_date=$(echo "$period_range" | awk -F " → " '{print $2}')
-          echo "⏳ Период:"
-          echo "$period_line"
+          period_range=$(echo "$period_line" | sed -E 's/Период: //;s/ → / /')
+          
+          # Извлекаем начало и конец периода
+          start_date=$(echo "$period_range" | awk '{print $1" "$2}')
+          end_date=$(echo "$period_range" | awk '{print $3" "$4}')
+          
+          echo "⏳ Период: $period_range"
 
-          # Переводим в секунды
+          # Переводим в секунды (убираем лишние символы и преобразуем в формат, подходящий для команды date)
           start_ts=$(date -d "$start_date" +%s)
           end_ts=$(date -d "$end_date" +%s)
           now_ts=$(date -u +%s)
-
+          
+          echo "⏳ Дата начала: $start_date"
+          echo "⏳ Дата окончания: $end_date"
+          
           # Считаем прогресс
           total=$((end_ts - start_ts))
           passed=$((now_ts - start_ts))
           if [ $passed -lt 0 ]; then passed=0; fi
           if [ $passed -gt $total ]; then passed=$total; fi
           progress=$((100 * passed / total))
+          
+          echo "🏁 Прогресс: $progress%"
 
           # Удаляем старую часть с прогрессом, если она была
           clean_title=$(echo "$card_name" | sed -E 's/ *\| Прогресс: [0-9]+%$//')
