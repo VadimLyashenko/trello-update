@@ -37,10 +37,12 @@ jobs:
           echo "$card_desc"
 
           # Извлекаем строку с Периодом
-          period_line=$(echo "$card_desc" | grep -i "Период: ")
-          period_range=$(echo "$period_line" | sed -E 's/Период: (.+)/\1/')
-          start_date=$(echo "$period_range" | awk -F " — " '{print $1}')
-          end_date=$(echo "$period_range" | awk -F " — " '{print $2}')
+          period_line=$(echo "$card_desc" | grep -i "Период:" | head -n 1)
+          
+          # Извлекаем дату начала и окончания, используя стрелку как разделитель
+          period_range=$(echo "$period_line" | sed -E 's/Период: (.+) → (.+)/\1 → \2/')
+          start_date=$(echo "$period_range" | awk -F " → " '{print $1}')
+          end_date=$(echo "$period_range" | awk -F " → " '{print $2}')
           echo "⏳ Период:"
           echo "$period_line"
 
