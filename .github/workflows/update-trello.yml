@@ -39,14 +39,16 @@ jobs:
           # Извлекаем строку с Периодом
           period_line=$(echo "$card_desc" | grep -i "Период:" | head -n 1)
           
-          # Убираем лишние символы и заменяем "→" на пробел
-          cleaned_period=$(echo "$period_line" | sed -E 's/Период:*\s*//;s/→/ /g')
+          # Очищаем строку от лишних символов (убираем "Период:", а также "→" заменяем на пробел)
+          cleaned_period=$(echo "$period_line" | sed -E 's/Период:\s*//;s/→/ /g')
           
-          # Извлекаем начало и конец периода
+          # Разделяем строку на дату начала и окончания
           start_date=$(echo "$cleaned_period" | awk '{print $1" "$2}')
           end_date=$(echo "$cleaned_period" | awk '{print $3" "$4}')
           
-          echo "⏳ Период: $cleaned_period"
+          # Выводим StartDate и EndDate для проверки
+          echo "✅ StartDate: $start_date"
+          echo "✅ EndDate: $end_date"
           
           # Переводим в секунды
           start_ts=$(date -d "$start_date" +%s)
