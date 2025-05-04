@@ -52,19 +52,21 @@ jobs:
           echo "✅ StartDate: $start_date"
           echo "✅ EndDate: $end_date"
 
-          # Переводим в секунды
+          # Устанавливаем текущую дату и время по Токио
+          current_time=$(TZ="Asia/Tokyo" date '+%Y-%m-%d %H:%M')
+          
+          # Преобразуем StartDate и EndDate в формат секунд с начала эпохи
           start_ts=$(date -d "$start_date" +%s)
           end_ts=$(date -d "$end_date" +%s)
-          now_ts=$(date -u +%s)
-          
-          echo "⏳ Дата начала: $start_date"
-          echo "⏳ Дата окончания: $end_date"
+          current_ts=$(date -d "$current_time" +%s)
           
           # Считаем прогресс
           total=$((end_ts - start_ts))
-          passed=$((now_ts - start_ts))
+          passed=$((current_ts - start_ts))
+          
           if [ $passed -lt 0 ]; then passed=0; fi
           if [ $passed -gt $total ]; then passed=$total; fi
+          
           progress=$((100 * passed / total))
           
           echo "🏁 Прогресс: $progress%"
