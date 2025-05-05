@@ -107,7 +107,7 @@ jobs:
           echo "$cards" | jq -c '.[]' | while read -r card; do
             name=$(echo "$card" | jq -r '.name')
             id=$(echo "$card" | jq -r '.id')
-          echo $name
+
           # Проверка на наличие имени карточки
           if [ -z "$name" ]; then
             echo "⏭ Пропущена карточка без имени: пропускаем обновление."
