@@ -18,8 +18,25 @@ jobs:
           set -e
           echo "🏁 Start"
 
-          # Получаем список списков на доске
-          lists=$(curl -s "https://api.trello.com/1/boards/$BOARD_ID/lists?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
+          # Надёжно получаем список списков на доске (макс. 3 попытки)
+          attempt=0
+          while [ $attempt -lt 3 ]; do
+            lists=$(curl -s "https://api.trello.com/1/boards/$BOARD_ID/lists?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
+            if echo "$lists" | jq empty > /dev/null 2>&1; then
+              break
+            fi
+            echo "⏳ Попытка $((attempt+1)) не удалась. Повтор через 3 сек..."
+            sleep 3
+            attempt=$((attempt+1))
+          done
+          
+          if [ $attempt -eq 3 ]; then
+            echo "❌ Не удалось получить корректный JSON от Trello после 3 попыток"
+            echo "Ответ сервера:"
+            echo "$lists"
+            exit 1
+          fi
+          
           first_list_id=$(echo "$lists" | jq -r '.[0].id')
           echo "📦 Получаем списки..."
 
