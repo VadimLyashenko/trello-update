@@ -93,3 +93,54 @@ jobs:
             --data-urlencode "name=$new_title" \
             --data-urlencode "key=$TRELLO_API_KEY" \
             --data-urlencode "token=$TRELLO_TOKEN"
+
+          echo "🏁 Start second_list updater"
+
+          second_list_id=$(echo "$lists" | jq -r '.[1].id')
+
+          echo "📦 Второй список ID: $second_list_id"
+
+          # Получаем карточки из второго списка
+          cards=$(curl -s "https://api.trello.com/1/lists/$second_list_id/cards?key=$TRELLO_API_KEY&token=$TRELLO_TOKEN")
+
+          # Обрабатываем каждую карточку
+          echo "$cards" | jq -c '.[]' | while read -r card; do
+            name=$(echo "$card" | jq -r '.name')
+            id=$(echo "$card" | jq -r '.id')
+
+              # Ищем дату в названии (формат YYYY-MM-DD HH:MM после "—")
+              raw_date=$(echo "$name" | grep -oP '— \K[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}')
+              if [ -z "$raw_date" ]; then
+                echo "⏭ Пропущена карточка без даты: $name"
+                continue
+              fi
+            
+              # Переводим дату в timestamp
+              start_ts=$(date -d "$raw_date" +%s || echo 0)
+            
+              # Считаем разницу
+              diff=$((current_ts - start_ts))
+              if [ $diff -lt 0 ]; then diff=0; fi
+            
+              days=$((diff / 86400))
+              hours=$(((diff % 86400) / 3600))
+              minutes=$(((diff % 3600) / 60))
+            
+              # Формируем новую строку "Прошло: ..."
+              passed="Прошло: ${days} дней ${hours} часов ${minutes} минут"
+            
+              # Удаляем старую строку "Прошло: ..." из названия, если была
+              clean_title=$(echo "$name" | sed -E 's/ *Прошло:.*//')
+            
+              # Добавляем новую строку
+              new_title="${clean_title} $passed"
+            
+              echo "🔄 Обновляем карточку: $new_title"
+            
+              # Обновляем название карточки
+              curl -s --request PUT "https://api.trello.com/1/cards/$id" \
+                --data-urlencode "name=$new_title" \
+                --data-urlencode "key=$TRELLO_API_KEY" \
+                --data-urlencode "token=$TRELLO_TOKEN"
+            
+            done
